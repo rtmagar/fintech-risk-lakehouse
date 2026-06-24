@@ -1,0 +1,10 @@
+[flake8]
+# Ignore the virtual environment and metadata folders
+exclude = 
+    venv/,
+    .git/,
+    __pycache__/,
+    .pytest_cache/
+
+# Set the maximum line length to the standard Python black format
+max-line-length = 88

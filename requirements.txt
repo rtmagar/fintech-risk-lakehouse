@@ -1,0 +1,4 @@
+confluent-kafka
+pydantic
+faker
+python-dotenv

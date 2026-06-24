@@ -1,0 +1,20 @@
+# Python Virtual Environment
+venv/
+__pycache__/
+*.pyc
+.env
+
+# Spark & Java Caches
+.ivy2/
+metastore_db/
+derby.log
+spark-warehouse/
+
+# Airflow & Docker Local Data
+logs/
+airflow/
+postgres-data/
+.pytest_cache/
+
+# Mac OS junk
+.DS_Store

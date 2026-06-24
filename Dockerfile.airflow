@@ -1,0 +1,30 @@
+# Start from the official Airflow image
+FROM apache/airflow:2.7.1-python3.11
+
+# Switch to root to install system-level infrastructure components
+USER root
+
+# Install Java 17 and procps (which provides the 'ps' command required by PySpark execution layers)
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+         openjdk-17-jre-headless \
+         procps \
+  && apt-get autoremove -yqq --purge \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
+
+# Cross-Platform Path Mapping: Dynamically symlink JAVA_HOME to prevent architecture mismatch crashes
+RUN if [ -d "/usr/lib/jvm/java-17-openjdk-arm64" ]; then \
+        ln -s /usr/lib/jvm/java-17-openjdk-arm64 /usr/lib/jvm/java-17-default; \
+    else \
+        ln -s /usr/lib/jvm/java-17-openjdk-amd64 /usr/lib/jvm/java-17-default; \
+    fi
+
+# Set the canonical environment variable path pointing to the unified symlink location
+ENV JAVA_HOME=/usr/lib/jvm/java-17-default
+
+# Return execution privileges to the low-privilege runtime user for safety
+USER airflow
+
+# Install the matching PySpark environment execution package
+RUN pip install --no-cache-dir pyspark==3.5.0
