@@ -1,0 +1,14 @@
+# A lightweight Python image for our data generator
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install the dependencies from your requirements.txt
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the script into the container
+COPY transaction_producer.py .
+
+# Run the producer infinitely
+CMD ["python", "transaction_producer.py"]

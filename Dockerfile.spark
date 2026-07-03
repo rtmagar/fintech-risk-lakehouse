@@ -1,0 +1,34 @@
+# A custom image that requires both Python and Java to run PySpark Structured Streaming
+# FIX: Pinned to 'bookworm' to ensure Java 17 availability and prevent OS drift
+FROM python:3.11-slim-bookworm
+
+USER root
+
+# Install Java 17 for PySpark
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+         openjdk-17-jre-headless \
+         procps \
+  && apt-get autoremove -yqq --purge \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
+
+# Fix Java paths for cross-platform compatibility (Mac M1/M2 vs Intel/Windows)
+RUN if [ -d "/usr/lib/jvm/java-17-openjdk-arm64" ]; then \
+        ln -s /usr/lib/jvm/java-17-openjdk-arm64 /usr/lib/jvm/java-17-default; \
+    else \
+        ln -s /usr/lib/jvm/java-17-openjdk-amd64 /usr/lib/jvm/java-17-default; \
+    fi
+
+ENV JAVA_HOME=/usr/lib/jvm/java-17-default
+
+WORKDIR /app
+
+# Install PySpark
+RUN pip install --no-cache-dir pyspark==3.5.0
+
+# Copy the ingestion script
+COPY bronze_ingestion.py .
+
+# Start the continuous stream
+CMD ["python", "bronze_ingestion.py"]

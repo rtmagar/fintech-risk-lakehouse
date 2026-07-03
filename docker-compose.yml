@@ -10,6 +10,23 @@ services:
       - MINIO_ROOT_PASSWORD=password123
     command: server /data --console-address ":9001"
 
+  
+    # AUTOMATION: The MinIO Setup Bot
+  minio-setup:
+    image: minio/mc
+    container_name: minio-setup
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 3;
+      /usr/bin/mc alias set myminio http://minio:9000 admin password123;
+      /usr/bin/mc mb myminio/raw-transactions --ignore-existing;
+      /usr/bin/mc mb myminio/cleansed-transactions --ignore-existing;
+      /usr/bin/mc mb myminio/risk-aggregates --ignore-existing;
+      exit 0;
+      "
+
   # 2. Our Local Kafka (Message Broker)
   redpanda:
     image: docker.redpanda.com/redpandadata/redpanda:latest
@@ -37,6 +54,27 @@ services:
       - redpanda
   
 
+  # --- AUTOMATED STREAMING PIPELINE ---
+  
+  # 1. The Data Generator (Infinite Mock Data)
+  kafka-producer:
+    build:
+      context: .
+      dockerfile: Dockerfile.producer
+    environment:
+      - KAFKA_BROKER=redpanda:9092
+      - EVENTS_PER_SECOND=20 # Sped up slightly for better Grafana charts!
+    depends_on:
+      - redpanda
+      
+  # 2. The Bronze Stream (Kafka -> S3)
+  bronze-ingestion:
+    build:
+      context: .
+      dockerfile: Dockerfile.spark
+    depends_on:
+      - minio-setup
+      - redpanda
 
 # --- Enterprise Airflow Metadata Database ---
   postgres:
@@ -101,3 +139,29 @@ services:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
     command: scheduler
+
+
+
+  # --- Enterprise Observability: Prometheus (Metrics DB) ---
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    depends_on:
+      - redpanda
+
+  # --- Enterprise Observability: Grafana (Dashboards) ---
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+    volumes:
+      - ./grafana_data:/var/lib/grafana
+      - ./grafana_provisioning/dashboards:/var/lib/grafana/dashboards
+      - ./grafana_provisioning/dashboard.yml:/etc/grafana/provisioning/dashboards/dashboard.yml

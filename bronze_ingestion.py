@@ -14,7 +14,7 @@ def create_spark_session():
     logger.info("Initializing PySpark Session...")
     spark = SparkSession.builder \
         .appName("Bronze-Transaction-Ingestion") \
-        .config("spark.hadoop.fs.s3a.endpoint", "http://localhost:9000") \
+        .config("spark.hadoop.fs.s3a.endpoint", "http://minio:9000") \
         .config("spark.hadoop.fs.s3a.access.key", "admin") \
         .config("spark.hadoop.fs.s3a.secret.key", "password123") \
         .config("spark.hadoop.fs.s3a.path.style.access", "true") \
@@ -23,7 +23,6 @@ def create_spark_session():
         .config("spark.sql.shuffle.partitions", "2") \
         .getOrCreate()
     
-    # Hide massive amounts of Java info logs
     spark.sparkContext.setLogLevel("WARN")
     return spark
 
@@ -31,10 +30,10 @@ def start_bronze_stream(spark):
     """Reads from Redpanda and streams raw JSON to MinIO."""
     logger.info("Connecting to Redpanda topic: live_transactions...")
     
-    # 1. Read the stream from Kafka
+    # 1. Read the stream from Kafka (UPDATED to Redpanda internal Docker DNS)
     kafka_df = spark.readStream \
         .format("kafka") \
-        .option("kafka.bootstrap.servers", "localhost:9093") \
+        .option("kafka.bootstrap.servers", "redpanda:9092") \
         .option("subscribe", "live_transactions") \
         .option("startingOffsets", "earliest") \
         .load()
@@ -52,7 +51,6 @@ def start_bronze_stream(spark):
         .outputMode("append") \
         .start()
 
-    # Keep the streaming job running forever
     query.awaitTermination()
 
 if __name__ == "__main__":

@@ -24,3 +24,5 @@ postgres-data/
 *.tfstate
 *.tfstate.backup
 .terraform.tfstate.lock.info
+terraform.tfstate
+grafana_data/
