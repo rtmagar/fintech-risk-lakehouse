@@ -18,3 +18,9 @@ postgres-data/
 
 # Mac OS junk
 .DS_Store
+
+# Terraform Data
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.tfstate.lock.info
