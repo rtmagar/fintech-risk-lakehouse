@@ -49,15 +49,17 @@ graph TD
         Prom -.-> Graf[Grafana Metrics UI]
     end
 ```
+
 ## Tech Stack
-* **Infrastructure as Code:** Terraform & LocalStack (simulating S3 and cloud resource parameters locally)
-* **Storage Layer:** MinIO (Local S3-compatible Object Storage)
-* **Message Broker:** Redpanda (High-throughput, developer-centric Kafka API compatible engine) 
-* **Compute Engine:** Apache Spark / PySpark 3.5.0 (Custom containers bundled with native Hadoop S3A filesystem connectors) 
-* **Table Format:**  Apache Iceberg (providing atomic ACID transactions, snapshot version isolation, and schema protection parameters)
-* **Infrastructure:** Docker & Docker-Compose
-* **Telemetry & Observability:** Prometheus & Grafana (Configured with file persistence mappings to capture runtime metric scraping operations)
-* **Languages & Libraries:** Python, pydantic, faker, confluent-kafka, pytest, flake8
+* **Infrastructure as Code:** Terraform (declaring S3 mock buckets locally via custom endpoint configurations pointing straight to MinIO)
+* **Storage Layer:** MinIO (Local S3-compatible Object Storage providing the unified storage backend for both raw data and the Apache Iceberg warehouse)
+* **Message Broker:** Redpanda (High-throughput, developer-centric Kafka API compatible streaming engine running in a lightweight single-container setup)
+* **Compute Engine:** Apache Spark / PySpark 3.5.0 (Custom container builds bundled with native Hadoop S3A filesystem connectors for reading from and writing to local object storage buckets)
+* **Table Format:** Apache Iceberg (providing atomic ACID transactions, snapshot version isolation, and strict schema protection parameters for the Silver cleansed layer)
+* **Workflow Orchestration:** Apache Airflow 2.7.1 (Multi-container architecture separating webserver and scheduler processes to coordinate batch pipelines and data quality loops)
+* **Infrastructure:** Docker & Docker-Compose (orchestrating the entire distributed cluster stack across an isolated local bridge network)
+* **Telemetry & Observability:** Prometheus & Grafana (Configured with file persistence volume mappings to capture continuous runtime metrics, tracking streaming throughput and consumer lag)
+* **Languages & Libraries:** Python, `pydantic`, `faker`, `confluent-kafka`, `pytest`, `flake8`
 
 
 # How the Data Flows
