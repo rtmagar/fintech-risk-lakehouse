@@ -98,7 +98,7 @@ This means the Silver-layer cleansing logic is verified automatically before it 
 **1. Clone the project repository and set up dependencies.**
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/rtmagar/fintech-risk-lakehouse.git
 cd fintech-risk-lakehouse
 
 python -m venv venv
