@@ -8,8 +8,9 @@
 ![Apache Iceberg](https://img.shields.io/badge/Apache_Iceberg-ACID_Table_Format-0081C9?style=flat&logo=apache&logoColor=white)
 ![Apache Airflow](https://img.shields.io/badge/Apache_Airflow-Orchestration-017CEE?style=flat&logo=apacheairflow&logoColor=white)
 ![Grafana](https://img.shields.io/badge/Grafana-Observability-F46800?style=flat&logo=grafana&logoColor=white)
+![CI](https://github.com/rtmagar/fintech-risk-lakehouse/actions/workflows/ci.yml/badge.svg)
 ## Project Overview
-This project simulates a high-throughput financial gateway scenario where millions of payment transaction events are ingested, checked for data quality anomalies, and processed continuously. The primary objective was to design and build a functional, real-time data streaming platform that captures raw JSON transaction events, enforces automated validation pipelines, and surfaces aggregated data models for risk analysis.
+This project simulates a financial gateway scenario where a continuous stream of payment transaction events is ingested, checked for data quality anomalies, and processed in near real time. The event producer (`transaction_producer.py`) emits events at a configurable rate (`EVENTS_PER_SECOND`), so the same medallion architecture that handles a local demo stream is designed to scale toward production transaction volumes via configuration, not a rewrite. The primary objective was to design and build a functional, real-time data streaming platform that captures raw JSON transaction events, enforces automated validation pipelines, and surfaces aggregated data models for risk analysis.
 
 To gain a deep understanding of infrastructure configuration, local cloud emulation, file access abstractions, and distributed processing engines, this platform was built using a **100% local, zero-cost enterprise architecture** using Docker to connect storage, message brokers, and workflow orchestrators.
 
@@ -60,6 +61,7 @@ graph TD
 * **Infrastructure:** Docker & Docker-Compose (orchestrating the entire distributed cluster stack across an isolated local bridge network)
 * **Telemetry & Observability:** Prometheus & Grafana (Configured with file persistence volume mappings to capture continuous runtime metrics, tracking streaming throughput and consumer lag)
 * **Languages & Libraries:** Python, `pydantic`, `faker`, `confluent-kafka`, `pytest`, `flake8`
+* **CI/CD:** GitHub Actions (`.github/workflows/ci.yml`) — runs on every push and pull request to `main`, installing Python 3.11 and Java 17 (required for PySpark), then gating the build on two checks: a `flake8` lint pass and a `pytest` run of PySpark unit tests
 
 
 # How the Data Flows
@@ -74,6 +76,15 @@ graph TD
 
 **The Reporting Synthesis**: Once cleared by the quality gate, `gold_aggregations.py` applies Spark SQL querying architectures to compute metrics (such as cumulative volumes spent and unique merchant footprints per user) and records them safely into production-ready Parquet targets.
 
+# Testing & CI/CD
+
+Every push and pull request to `main` triggers a GitHub Actions workflow (`.github/workflows/ci.yml`) that:
+
+1. Checks out the code and sets up Python 3.11 and Java 17 (PySpark requires a JVM).
+2. Runs `flake8` as a hard lint gate — the build fails on syntax errors or undefined names.
+3. Runs `pytest tests/`, which spins up a local, single-node Spark session and unit-tests the exact deduplication and filtering logic used in production: `tests/test_silver_logic.py` feeds `silver_cleansing.py`'s transformation chain a small mock DataFrame containing a duplicate transaction ID, a negative amount, and a zero amount, then asserts that only the 2 valid rows survive.
+
+This means the Silver-layer cleansing logic is verified automatically before it can be merged — not just manually spot-checked.
 
 # How to Run It Locally
 
